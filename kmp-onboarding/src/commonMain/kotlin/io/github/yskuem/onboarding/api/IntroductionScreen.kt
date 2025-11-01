@@ -128,7 +128,7 @@ fun IntroductionScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .then(
-                    if (bgSpec.brush != null) Modifier.background(bgSpec.brush!!) else Modifier
+                    if (bgSpec.brush != null) Modifier.background(bgSpec.brush) else Modifier
                 )
         ) {
             Column(
