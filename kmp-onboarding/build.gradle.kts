@@ -8,65 +8,54 @@ plugins {
     alias(libs.plugins.androidLint)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
-    alias(libs.plugins.dokka)
+    alias(libs.plugins.dokka)      // Dokka v2 を想定
     alias(libs.plugins.mavenPublish)
+    id("signing")
 }
 
-val signingKeyFromEnv = providers.environmentVariable("GPG_KEY_CONTENTS").orNull
-val signingKeyBase64 = providers.environmentVariable("GPG_KEY_CONTENTS_B64").orNull
-val signingKeyPassword = providers.environmentVariable("SIGNING_PASSWORD").orNull
-val signingKeyId = providers.environmentVariable("SIGNING_KEY_ID").orNull
+// ---- 入力の取得（Gradle プロパティ優先→環境変数） ----
+fun prop(name: String): String? = findProperty(name) as String?
+fun env(name: String): String? = providers.environmentVariable(name).orNull
 
-val resolvedSigningKey = signingKeyFromEnv ?: signingKeyBase64?.let { encoded ->
-    runCatching { String(Base64.getDecoder().decode(encoded)) }.getOrNull()
+// Base64 の秘密鍵のみを受ける
+val signingKeyB64: String? =
+    prop("signingInMemoryKeyBase64") ?: env("GPG_KEY_CONTENTS_B64")
+
+val signingKey: String? = signingKeyB64?.let {
+    runCatching { String(Base64.getDecoder().decode(it)) }.getOrNull()
 }
 
-resolvedSigningKey?.let { extra["signingInMemoryKey"] = it }
-signingKeyPassword?.let { extra["signingInMemoryKeyPassword"] = it }
-signingKeyId?.let { extra["signingInMemoryKeyId"] = it }
+val signingKeyPass: String? =
+    prop("signingInMemoryKeyPassword") ?: env("SIGNING_PASSWORD")
 
-providers.environmentVariable("MAVEN_CENTRAL_USERNAME").orNull?.let {
-    extra["mavenCentralUsername"] = it
-}
-providers.environmentVariable("MAVEN_CENTRAL_PASSWORD").orNull?.let {
-    extra["mavenCentralPassword"] = it
-}
+val signingKeyId: String? =
+    prop("signingInMemoryKeyId") ?: env("SIGNING_KEY_ID")
 
+// Central 認証（User Token）
+val centralUser: String? =
+    prop("mavenCentralUsername") ?: env("MAVEN_CENTRAL_USERNAME")
+val centralPass: String? =
+    prop("mavenCentralPassword") ?: env("MAVEN_CENTRAL_PASSWORD")
+
+centralUser?.let { extensions.extraProperties["mavenCentralUsername"] = it }
+centralPass?.let { extensions.extraProperties["mavenCentralPassword"] = it }
+
+// ---- KMP ターゲット ----
 kotlin {
     androidLibrary {
         namespace = "io.github.yskuem.onboarding"
         compileSdk = 36
         minSdk = 24
-
-        withHostTestBuilder {
-        }
-
-        withDeviceTestBuilder {
-            sourceSetTreeName = "test"
-        }.configure {
+        withHostTestBuilder {}
+        withDeviceTestBuilder { sourceSetTreeName = "test" }.configure {
             instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         }
     }
 
     val xcfName = "kmp-onboardingKit"
-
-    iosX64 {
-        binaries.framework {
-            baseName = xcfName
-        }
-    }
-
-    iosArm64 {
-        binaries.framework {
-            baseName = xcfName
-        }
-    }
-
-    iosSimulatorArm64 {
-        binaries.framework {
-            baseName = xcfName
-        }
-    }
+    iosX64 { binaries.framework { baseName = xcfName } }
+    iosArm64 { binaries.framework { baseName = xcfName } }
+    iosSimulatorArm64 { binaries.framework { baseName = xcfName } }
 
     sourceSets {
         commonMain {
@@ -81,19 +70,8 @@ kotlin {
                 implementation(compose.components.uiToolingPreview)
             }
         }
-
-        commonTest {
-            dependencies {
-                implementation(libs.kotlin.test)
-            }
-        }
-
-        androidMain {
-            dependencies {
-                // Android-specific dependencies
-            }
-        }
-
+        commonTest { dependencies { implementation(libs.kotlin.test) } }
+        androidMain { }
         getByName("androidDeviceTest") {
             dependencies {
                 implementation(libs.androidx.runner)
@@ -101,28 +79,19 @@ kotlin {
                 implementation(libs.androidx.testExt.junit)
             }
         }
-
-        iosMain {
-            dependencies {
-                // iOS-specific dependencies
-            }
-        }
+        iosMain { }
     }
 }
 
+// ---- Maven Central 公開設定 ----
 mavenPublishing {
     coordinates("io.github.yskuem", "kmp-onboarding", "1.0.0")
-
     publishToMavenCentral()
-    if (resolvedSigningKey != null && signingKeyPassword != null) {
-        signAllPublications()
-    } else {
-        logger.warn("Signing key not configured. Publications will not be signed.")
-    }
+    signAllPublications() // 常に有効
 
     configure(
         KotlinMultiplatform(
-            javadocJar = JavadocJar.Dokka("dokkaGeneratePublicationHtml"),
+            javadocJar = JavadocJar.Dokka("dokkaGeneratePublicationHtml"), // Dokka v2
             sourcesJar = true,
             androidVariantsToPublish = listOf("release")
         )
@@ -152,5 +121,15 @@ mavenPublishing {
             connection = "scm:git:git://github.com/yskuem/kmp-onboarding.git"
             developerConnection = "scm:git:ssh://git@github.com/yskuem/kmp-onboarding.git"
         }
+    }
+}
+
+signing {
+    isRequired = true
+    val key   = signingKey
+    val pass  = signingKeyPass
+    val keyId = signingKeyId?.ifBlank { null }
+    if (!key.isNullOrBlank()) {
+        useInMemoryPgpKeys(keyId, key, pass) // pass は null 可
     }
 }
