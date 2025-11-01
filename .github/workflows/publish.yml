@@ -1,4 +1,4 @@
-# .github/workflows/publish.yml
+
 name: Publish
 
 on:
@@ -8,6 +8,7 @@ on:
 
 jobs:
   publish:
+    name: Release build and publish
     runs-on: macOS-latest
 
     steps:
@@ -34,10 +35,18 @@ jobs:
       - name: Sanity check signing key (masked)
         shell: bash
         run: |
+          # 空でないこと
           test -n "$ORG_GRADLE_PROJECT_signingInMemoryKey"
-          echo "$ORG_GRADLE_PROJECT_signingInMemoryKey" | head -1 | grep -q '^-----BEGIN PGP PRIVATE KEY BLOCK-----$'
-          echo "$ORG_GRADLE_PROJECT_signingInMemoryKey" | tail -1 | grep -q '^-----END PGP PRIVATE KEY BLOCK-----$'
-          echo "KEY_LENGTH=$(echo "$ORG_GRADLE_PROJECT_signingInMemoryKey" | wc -c)"
+          # 先頭行ヘッダ
+          printf '%s' "$ORG_GRADLE_PROJECT_signingInMemoryKey" \
+            | sed -n '1p' \
+            | grep -qx '-----BEGIN PGP PRIVATE KEY BLOCK-----'
+          # 最終行フッタ
+          printf '%s' "$ORG_GRADLE_PROJECT_signingInMemoryKey" \
+            | awk 'END{print}' \
+            | grep -qx '-----END PGP PRIVATE KEY BLOCK-----'
+          # 長さ表示（内容は自動マスクされる）
+          printf 'KEY_LENGTH=%s\n' "$(printf '%s' "$ORG_GRADLE_PROJECT_signingInMemoryKey" | wc -c)"
 
       - name: Publish to Maven Central
         run: ./gradlew :kmp-onboarding:publishToMavenCentral --no-configuration-cache
