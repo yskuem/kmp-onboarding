@@ -1,5 +1,6 @@
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinMultiplatform
+import org.gradle.api.provider.Provider
 import java.util.Base64
 
 plugins {
@@ -12,23 +13,41 @@ plugins {
     alias(libs.plugins.mavenPublish)
 }
 
-val signingKeyFromEnv = providers.environmentVariable("GPG_KEY_CONTENTS").orNull
-val signingKeyBase64 = providers.environmentVariable("GPG_KEY_CONTENTS_B64").orNull
-val signingKeyPassword = providers.environmentVariable("SIGNING_PASSWORD").orNull
-val signingKeyId = providers.environmentVariable("SIGNING_KEY_ID").orNull
-
-val resolvedSigningKey = signingKeyFromEnv ?: signingKeyBase64?.let { encoded ->
+fun Provider<String>.decodedBase64OrNull(): String? = orNull?.let { encoded ->
     runCatching { String(Base64.getDecoder().decode(encoded)) }.getOrNull()
 }
+
+val signingKeyFromEnv = providers.environmentVariable("GPG_KEY_CONTENTS").orNull
+val signingKeyFromGradleProperty = providers.gradleProperty("signingInMemoryKey").orNull
+
+val signingKeyBase64Env = providers.environmentVariable("GPG_KEY_CONTENTS_B64").decodedBase64OrNull()
+val signingKeyBase64Property = providers.gradleProperty("signingInMemoryKeyB64").decodedBase64OrNull()
+
+val signingKeyPassword = providers.environmentVariable("SIGNING_PASSWORD").orElse(
+    providers.gradleProperty("signingInMemoryKeyPassword")
+).orNull
+
+val signingKeyId = providers.environmentVariable("SIGNING_KEY_ID").orElse(
+    providers.gradleProperty("signingInMemoryKeyId")
+).orNull
+
+val resolvedSigningKey = signingKeyFromEnv
+    ?: signingKeyBase64Env
+    ?: signingKeyFromGradleProperty
+    ?: signingKeyBase64Property
 
 resolvedSigningKey?.let { extra["signingInMemoryKey"] = it }
 signingKeyPassword?.let { extra["signingInMemoryKeyPassword"] = it }
 signingKeyId?.let { extra["signingInMemoryKeyId"] = it }
 
-providers.environmentVariable("MAVEN_CENTRAL_USERNAME").orNull?.let {
+providers.environmentVariable("MAVEN_CENTRAL_USERNAME").orElse(
+    providers.gradleProperty("mavenCentralUsername")
+).orNull?.let {
     extra["mavenCentralUsername"] = it
 }
-providers.environmentVariable("MAVEN_CENTRAL_PASSWORD").orNull?.let {
+providers.environmentVariable("MAVEN_CENTRAL_PASSWORD").orElse(
+    providers.gradleProperty("mavenCentralPassword")
+).orNull?.let {
     extra["mavenCentralPassword"] = it
 }
 
