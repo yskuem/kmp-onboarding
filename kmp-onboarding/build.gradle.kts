@@ -1,9 +1,14 @@
+import com.vanniktech.maven.publish.JavadocJar
+import com.vanniktech.maven.publish.KotlinMultiplatform
+
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidKotlinMultiplatformLibrary)
     alias(libs.plugins.androidLint)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.dokka)
+    alias(libs.plugins.mavenPublish)
 }
 
 kotlin {
@@ -104,5 +109,46 @@ kotlin {
             }
         }
     }
+}
 
+
+mavenPublishing {
+    coordinates("io.github.yskuem", "kmp-onboarding", "1.0.0")
+
+    publishToMavenCentral()
+    signAllPublications()
+
+    configure(
+        KotlinMultiplatform(
+            javadocJar = JavadocJar.Dokka("dokkaHtml"),
+            sourcesJar = true,
+            androidVariantsToPublish = listOf("release")
+        )
+    )
+
+    pom {
+        name = "KMP Onboarding"
+        description = "Onboarding UI library for Kotlin Multiplatform"
+        inceptionYear = "2025"
+        url = "https://github.com/yskuem/kmp-onboarding"
+        licenses {
+            license {
+                name = "The Apache License, Version 2.0"
+                url = "https://www.apache.org/licenses/LICENSE-2.0.txt"
+                distribution = "repo"
+            }
+        }
+        developers {
+            developer {
+                id = "yskuem"
+                name = "yskuem"
+                url = "https://github.com/yskuem"
+            }
+        }
+        scm {
+            url = "https://github.com/yskuem/kmp-onboarding"
+            connection = "scm:git:git://github.com/yskuem/kmp-onboarding.git"
+            developerConnection = "scm:git:ssh://git@github.com/yskuem/kmp-onboarding.git"
+        }
+    }
 }
