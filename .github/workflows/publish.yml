@@ -19,32 +19,22 @@ jobs:
           distribution: zulu
           java-version: 21
 
-      # base64 をデコードし、改行を保持したまま Gradle プロパティに流し込む
-      - name: Prepare signing props (base64 -> env)
+      # 秘密鍵（PRIVATE KEY BLOCK）を gpg にインポート
+      - name: Import secret key to gpg
         shell: bash
         run: |
-          echo "${{ secrets.GPG_KEY_CONTENTS_B64 }}" | base64 --decode > /tmp/private.asc
-          {
-            echo 'ORG_GRADLE_PROJECT_signingInMemoryKey<<EOF'
-            cat /tmp/private.asc
-            echo 'EOF'
-          } >> "$GITHUB_ENV"
-          echo "ORG_GRADLE_PROJECT_signingInMemoryKeyPassword=${{ secrets.SIGNING_PASSWORD }}" >> "$GITHUB_ENV"
-          echo "ORG_GRADLE_PROJECT_signingInMemoryKeyId=${{ secrets.SIGNING_KEY_ID }}" >> "$GITHUB_ENV"
-          echo "ORG_GRADLE_PROJECT_mavenCentralUsername=${{ secrets.MAVEN_CENTRAL_USERNAME }}" >> "$GITHUB_ENV"
-          echo "ORG_GRADLE_PROJECT_mavenCentralPassword=${{ secrets.MAVEN_CENTRAL_PASSWORD }}" >> "$GITHUB_ENV"
+          printf '%s\n' "${{ secrets.GPG_KEY_CONTENTS }}" > /tmp/private.asc
+          gpg --batch --import /tmp/private.asc
+          rm -f /tmp/private.asc
+          # ここで鍵が見えていればフォーマットはOK（ログは自動マスク）
+          gpg --list-secret-keys --keyid-format LONG
 
-      # 軽い検証（BEGIN/END 行と長さのみ）
-      - name: Sanity check signing key (masked)
-        shell: bash
-        run: |
-          test -n "$ORG_GRADLE_PROJECT_signingInMemoryKey"
-          printf '%s' "$ORG_GRADLE_PROJECT_signingInMemoryKey" | tr -d '\r' | sed -n '1p' \
-            | grep -qx -- '-----BEGIN PGP PRIVATE KEY BLOCK-----'
-          printf '%s' "$ORG_GRADLE_PROJECT_signingInMemoryKey" | tr -d '\r' | awk 'END{print}' \
-            | grep -qx -- '-----END PGP PRIVATE KEY BLOCK-----'
-          printf 'KEY_LENGTH=%s\n' "$(printf '%s' "$ORG_GRADLE_PROJECT_signingInMemoryKey" | wc -c)"
-
-      # 公開（モジュールを明示）
-      - name: Publish to Maven Central
+      # gnupg モードで Publish（モジュールを明示）
+      - name: Publish to Maven Central (gnupg mode)
         run: ./gradlew :kmp-onboarding:publishToMavenCentral --no-configuration-cache
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signing.gnupg.executable: gpg
+          ORG_GRADLE_PROJECT_signing.gnupg.keyName: ${{ secrets.SIGNING_KEY_ID }}   # 16桁 LONG KeyID（省略可）
+          ORG_GRADLE_PROJECT_signing.gnupg.passphrase: ${{ secrets.SIGNING_PASSWORD }}
