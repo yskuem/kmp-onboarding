@@ -1,0 +1,7 @@
+TEAM_ID=
+
+PRODUCT_NAME=Kmp_onboarding
+PRODUCT_BUNDLE_IDENTIFIER=lib.yskuem.kmp.onboarding.Kmp_onboarding$(TEAM_ID)
+
+CURRENT_PROJECT_VERSION=1
+MARKETING_VERSION=1.0
