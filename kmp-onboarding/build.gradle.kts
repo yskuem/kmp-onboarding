@@ -1,5 +1,6 @@
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinMultiplatform
+import java.util.Base64
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -9,6 +10,26 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.dokka)
     alias(libs.plugins.mavenPublish)
+}
+
+val signingKeyFromEnv = providers.environmentVariable("GPG_KEY_CONTENTS").orNull
+val signingKeyBase64 = providers.environmentVariable("GPG_KEY_CONTENTS_B64").orNull
+val signingKeyPassword = providers.environmentVariable("SIGNING_PASSWORD").orNull
+val signingKeyId = providers.environmentVariable("SIGNING_KEY_ID").orNull
+
+val resolvedSigningKey = signingKeyFromEnv ?: signingKeyBase64?.let { encoded ->
+    runCatching { String(Base64.getDecoder().decode(encoded)) }.getOrNull()
+}
+
+resolvedSigningKey?.let { extra["signingInMemoryKey"] = it }
+signingKeyPassword?.let { extra["signingInMemoryKeyPassword"] = it }
+signingKeyId?.let { extra["signingInMemoryKeyId"] = it }
+
+providers.environmentVariable("MAVEN_CENTRAL_USERNAME").orNull?.let {
+    extra["mavenCentralUsername"] = it
+}
+providers.environmentVariable("MAVEN_CENTRAL_PASSWORD").orNull?.let {
+    extra["mavenCentralPassword"] = it
 }
 
 kotlin {
@@ -93,7 +114,11 @@ mavenPublishing {
     coordinates("io.github.yskuem", "kmp-onboarding", "1.0.0")
 
     publishToMavenCentral()
-    signAllPublications()
+    if (resolvedSigningKey != null && signingKeyPassword != null) {
+        signAllPublications()
+    } else {
+        logger.warn("Signing key not configured. Publications will not be signed.")
+    }
 
     configure(
         KotlinMultiplatform(
