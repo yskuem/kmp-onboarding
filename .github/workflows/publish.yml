@@ -4,7 +4,7 @@ name: Publish
 on:
   push:
     branches:
-      - 'release/**'   # 'release/' で始まるブランチへの push で起動
+      - 'release/**'
 
 jobs:
   publish:
@@ -19,13 +19,14 @@ jobs:
           distribution: zulu
           java-version: 21
 
-      # 改行を保持したまま Secrets を Gradle プロパティに流し込む
-      - name: Prepare signing props
+      # base64 をデコードし、改行を保持したまま Gradle プロパティに流し込む
+      - name: Prepare signing props (base64 -> env)
         shell: bash
         run: |
+          echo "${{ secrets.GPG_KEY_CONTENTS_B64 }}" | base64 --decode > /tmp/private.asc
           {
             echo 'ORG_GRADLE_PROJECT_signingInMemoryKey<<EOF'
-            echo "${{ secrets.GPG_KEY_CONTENTS }}"
+            cat /tmp/private.asc
             echo 'EOF'
           } >> "$GITHUB_ENV"
           echo "ORG_GRADLE_PROJECT_signingInMemoryKeyPassword=${{ secrets.SIGNING_PASSWORD }}" >> "$GITHUB_ENV"
@@ -33,24 +34,15 @@ jobs:
           echo "ORG_GRADLE_PROJECT_mavenCentralUsername=${{ secrets.MAVEN_CENTRAL_USERNAME }}" >> "$GITHUB_ENV"
           echo "ORG_GRADLE_PROJECT_mavenCentralPassword=${{ secrets.MAVEN_CENTRAL_PASSWORD }}" >> "$GITHUB_ENV"
 
-      # 鍵の受け渡し検証：BEGIN/END 行と長さのみ確認
+      # 軽い検証（BEGIN/END 行と長さのみ）
       - name: Sanity check signing key (masked)
         shell: bash
         run: |
-          # 空でないこと
           test -n "$ORG_GRADLE_PROJECT_signingInMemoryKey"
-
-          # 先頭行ヘッダ（CRLF混入を除去してから、-- でパターン開始を明示）
-          printf '%s' "$ORG_GRADLE_PROJECT_signingInMemoryKey" \
-            | tr -d '\r' | sed -n '1p' \
+          printf '%s' "$ORG_GRADLE_PROJECT_signingInMemoryKey" | tr -d '\r' | sed -n '1p' \
             | grep -qx -- '-----BEGIN PGP PRIVATE KEY BLOCK-----'
-
-          # 最終行フッタ
-          printf '%s' "$ORG_GRADLE_PROJECT_signingInMemoryKey" \
-            | tr -d '\r' | awk 'END{print}' \
+          printf '%s' "$ORG_GRADLE_PROJECT_signingInMemoryKey" | tr -d '\r' | awk 'END{print}' \
             | grep -qx -- '-----END PGP PRIVATE KEY BLOCK-----'
-
-          # 長さ表示（内容は自動マスクされる）
           printf 'KEY_LENGTH=%s\n' "$(printf '%s' "$ORG_GRADLE_PROJECT_signingInMemoryKey" | wc -c)"
 
       # 公開（モジュールを明示）
