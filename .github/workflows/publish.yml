@@ -1,3 +1,4 @@
+# .github/workflows/publish.yml
 name: Publish
 
 on:
@@ -7,19 +8,36 @@ on:
 
 jobs:
   publish:
-    name: Release build and publish
     runs-on: macOS-latest
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-java@v4
         with:
           distribution: zulu
           java-version: 21
-      - name: Publish to Maven Central (manual release)
-        run: ./gradlew :kmp-onboarding:publishAndReleaseToMavenCentral --no-configuration-cache
-        env:
-          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
-          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
-          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.GPG_KEY_CONTENTS }}
-          ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.SIGNING_KEY_ID }}
-          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
+
+      - name: Prepare signing props
+        shell: bash
+        run: |
+          {
+            echo 'ORG_GRADLE_PROJECT_signingInMemoryKey<<EOF'
+            echo "${{ secrets.GPG_KEY_CONTENTS }}"
+            echo 'EOF'
+          } >> "$GITHUB_ENV"
+          echo "ORG_GRADLE_PROJECT_signingInMemoryKeyPassword=${{ secrets.SIGNING_PASSWORD }}" >> "$GITHUB_ENV"
+          echo "ORG_GRADLE_PROJECT_signingInMemoryKeyId=${{ secrets.SIGNING_KEY_ID }}" >> "$GITHUB_ENV"
+          echo "ORG_GRADLE_PROJECT_mavenCentralUsername=${{ secrets.MAVEN_CENTRAL_USERNAME }}" >> "$GITHUB_ENV"
+          echo "ORG_GRADLE_PROJECT_mavenCentralPassword=${{ secrets.MAVEN_CENTRAL_PASSWORD }}" >> "$GITHUB_ENV"
+
+      - name: Sanity check signing key (masked)
+        shell: bash
+        run: |
+          test -n "$ORG_GRADLE_PROJECT_signingInMemoryKey"
+          echo "$ORG_GRADLE_PROJECT_signingInMemoryKey" | head -1 | grep -q '^-----BEGIN PGP PRIVATE KEY BLOCK-----$'
+          echo "$ORG_GRADLE_PROJECT_signingInMemoryKey" | tail -1 | grep -q '^-----END PGP PRIVATE KEY BLOCK-----$'
+          echo "KEY_LENGTH=$(echo "$ORG_GRADLE_PROJECT_signingInMemoryKey" | wc -c)"
+
+      - name: Publish to Maven Central
+        run: ./gradlew :kmp-onboarding:publishToMavenCentral --no-configuration-cache
