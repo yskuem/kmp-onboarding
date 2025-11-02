@@ -11,9 +11,7 @@ KMP Onboarding is a Kotlin Multiplatform library that helps you build rich, anim
 
 ## Demo
 
-<p align="center">
-  <img src="https://github-production-user-asset-6210df.s3.amazonaws.com/81158423/508709629-cbb26603-d8a6-4283-8d57-67fcb8490d89.gif?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAVCODYLSA53PQK4ZA%2F20251102%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20251102T131024Z&X-Amz-Expires=300&X-Amz-Signature=5f23a4b9019192e113cbb469dd5d7ef38f5824058f884d0533398b5d8cb1c6a8&X-Amz-SignedHeaders=host" alt="KMP Onboarding demo" width="640" />
-</p>
+<img loading="lazy" src="https://github.com/user-attachments/assets/2bd81547-b163-496b-95fa-6e0a5b6cd520" width=250>
 
 ## Getting started
 Add the dependency to the `commonMain` source set of your Compose Multiplatform project:
