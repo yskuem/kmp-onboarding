@@ -9,6 +9,10 @@ KMP Onboarding is a Kotlin Multiplatform library that helps you build rich, anim
 - **Animated indicators** – Customizable page indicators with gradients, shapes, and transitions.
 - **Flexible theming** – Override colors, typography, gradients, and global headers/footers for complete brand alignment.
 
+## Demo
+
+<img loading="lazy" src="https://github.com/user-attachments/assets/2bd81547-b163-496b-95fa-6e0a5b6cd520" width=250>
+
 ## Getting started
 Add the dependency to the `commonMain` source set of your Compose Multiplatform project:
 
@@ -29,49 +33,81 @@ Below is a simple onboarding flow that demonstrates how to configure pages, cust
 
 ```kotlin
 @Composable
-fun OnboardingScreen() {
+fun OnboardingScreen(onFinished: () -> Unit) {
+    // Define pages with title/body and optional image/decoration.
     val pages = listOf(
         PageViewModel(
             title = "Welcome",
-            body = "Discover curated lessons tailored to your goals.",
+            body = "Turn your notes into bite-size quizzes and master grammar faster.",
             image = {
                 Icon(
                     imageVector = Icons.Outlined.School,
                     contentDescription = null,
-                    modifier = Modifier.size(180.dp)
+                    modifier = Modifier.size(160.dp)
                 )
             },
             decoration = PageDecoration(
                 gradient = Brush.verticalGradient(
-                    listOf(Color(0xFFE8F5E9), Color(0xFFB2DFDB))
+                    colors = listOf(
+                        Color(0xFFFFF5F0),
+                        Color(0xFFFFE2D6)
+                    )
                 )
             )
         ),
         PageViewModel(
-            title = "Track progress",
-            body = "Set reminders and stay motivated with daily streaks.",
-            decoration = PageDecoration(pageColor = Color(0xFFF3E5F5))
+            title = "Auto-generated Quizzes",
+            body = "Create quizzes from photos of your textbooks and notes.",
+            image = {
+                Icon(
+                    imageVector = Icons.Outlined.Quiz,
+                    contentDescription = null,
+                    modifier = Modifier.size(160.dp)
+                )
+            },
+            decoration = PageDecoration(pageColor = Color(0xFFEDEBFA)) // subtle lilac tint
+        ),
+        PageViewModel(
+            title = "Daily Progress",
+            body = "Track streaks and stay motivated with lightweight reminders.",
+            image = {
+                Icon(
+                    imageVector = Icons.Outlined.AutoAwesome,
+                    contentDescription = null,
+                    modifier = Modifier.size(160.dp)
+                )
+            },
+            decoration = PageDecoration(pageColor = Color(0xFFE4F5F1))
         )
     )
 
+    // If you want programmatic control, provide your own state:
+    // val state = rememberIntroState { pages.size }
     IntroductionScreen(
         pages = pages,
+        // state = state, // uncomment if you use rememberIntroState above
         showSkipButton = true,
         showNextButton = true,
         showBackButton = true,
         showDoneButton = true,
+
+        // Button slots
         skip = { Text("Skip") },
         next = { Text("Next") },
         back = { Text("Back") },
-        done = { Text("Get started") },
-        onSkip = { skipToEnd() },
-        onDone = {
-            // Navigate to your authenticated area here
-        },
+        done = { Text("Get Started") },
+
+        // Callbacks
+        onSkip = { /* Jump to the end or mark onboarding as seen */ },
+        onDone = { onFinished() },
+
+        // Indicator container styling
         dotsContainerStyle = DotsContainerStyle(
             containerColor = Color.Transparent,
             contentPadding = PaddingValues(20.dp)
         )
+
+        // You can also provide globalHeader / globalFooter for a persistent logo/CTA.
     )
 }
 ```
