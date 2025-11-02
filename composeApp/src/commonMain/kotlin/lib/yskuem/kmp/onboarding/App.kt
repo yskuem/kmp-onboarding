@@ -3,94 +3,106 @@ package lib.yskuem.kmp.onboarding
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.EmojiObjects
-import androidx.compose.material.icons.outlined.Headset
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.Quiz
 import androidx.compose.material.icons.outlined.School
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import io.github.yskuem.onboarding.api.DotsContainerStyle
 import io.github.yskuem.onboarding.api.IntroductionScreen
 import io.github.yskuem.onboarding.api.PageDecoration
 import io.github.yskuem.onboarding.api.PageViewModel
 
+// The following types come from your kmp-onboarding library.
+// Let your IDE auto-import them to avoid typos in package names.
 @Composable
-fun App() {
+fun App(onFinished: () -> Unit = {}) {
     MaterialTheme {
-        val pages = listOf(
-            PageViewModel(
-                title = "AI英文法道場",
-                body = "無限に新しい問題。学習ログも自動で可視化。",
-                image = {
-                    Icon(
-                        imageVector = Icons.Outlined.EmojiObjects,
-                        contentDescription = null,
-                        modifier = Modifier.size(180.dp)
-                    )
-                },
-                decoration = PageDecoration(
-                    gradient = Brush.verticalGradient(
-                        listOf(Color(0xFFFFF5F0), Color(0xFFFF7A59))
-                    ),
-                    titleTextStyle = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                    bodyTextStyle = MaterialTheme.typography.bodyLarge.copy(lineHeight = 22.sp)
+        OnboardingScreen(onFinished = onFinished)
+    }
+}
+
+@Composable
+fun OnboardingScreen(onFinished: () -> Unit) {
+    // Define pages with title/body and optional image/decoration.
+    val pages = listOf(
+        PageViewModel(
+            title = "Welcome",
+            body = "Turn your notes into bite-size quizzes and master grammar faster.",
+            image = {
+                Icon(
+                    imageVector = Icons.Outlined.School,
+                    contentDescription = null,
+                    modifier = Modifier.size(160.dp)
                 )
-            ),
-            PageViewModel(
-                title = "リスニングも強化",
-                body = "スクリプト同期と倍速再生で効率アップ。",
-                image = {
-                    Icon(
-                        imageVector = Icons.Outlined.Headset,
-                        contentDescription = null,
-                        modifier = Modifier.size(180.dp)
-                    )
-                },
-                decoration = PageDecoration(
-                    pageColor = Color(0xFFE3F2FD)
-                )
-            ),
-            PageViewModel(
-                title = "今日から開始",
-                body = "3分で1セット。毎日の習慣に最適。",
-                image = {
-                    Icon(
-                        imageVector = Icons.Outlined.School,
-                        contentDescription = null,
-                        modifier = Modifier.size(180.dp)
-                    )
-                },
-                decoration = PageDecoration(
-                    gradient = Brush.verticalGradient(
-                        listOf(Color(0xFFE8F5E9), Color(0xFFB2DFDB))
+            },
+            decoration = PageDecoration(
+                gradient = Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFFFFF5F0),
+                        Color(0xFFFFE2D6)
                     )
                 )
             )
+        ),
+        PageViewModel(
+            title = "Auto-generated Quizzes",
+            body = "Create quizzes from photos of your textbooks and notes.",
+            image = {
+                Icon(
+                    imageVector = Icons.Outlined.Quiz,
+                    contentDescription = null,
+                    modifier = Modifier.size(160.dp)
+                )
+            },
+            decoration = PageDecoration(pageColor = Color(0xFFEDEBFA)) // subtle lilac tint
+        ),
+        PageViewModel(
+            title = "Daily Progress",
+            body = "Track streaks and stay motivated with lightweight reminders.",
+            image = {
+                Icon(
+                    imageVector = Icons.Outlined.AutoAwesome,
+                    contentDescription = null,
+                    modifier = Modifier.size(160.dp)
+                )
+            },
+            decoration = PageDecoration(pageColor = Color(0xFFE4F5F1))
+        )
+    )
+
+    // If you want programmatic control, provide your own state:
+    // val state = rememberIntroState { pages.size }
+    IntroductionScreen(
+        pages = pages,
+        // state = state, // uncomment if you use rememberIntroState above
+        showSkipButton = true,
+        showNextButton = true,
+        showBackButton = true,
+        showDoneButton = true,
+
+        // Button slots
+        skip = { Text("Skip") },
+        next = { Text("Next") },
+        back = { Text("Back") },
+        done = { Text("Get Started") },
+
+        // Callbacks
+        onSkip = { /* Jump to the end or mark onboarding as seen */ },
+        onDone = { onFinished() },
+
+        // Indicator container styling
+        dotsContainerStyle = DotsContainerStyle(
+            containerColor = Color.Transparent,
+            contentPadding = PaddingValues(20.dp)
         )
 
-        IntroductionScreen(
-            pages = pages,
-            showSkipButton = true,
-            showNextButton = true,
-            showDoneButton = true,
-            skip = { Text("スキップ") },
-            next = { Text("次へ") },
-            done = { Text("はじめる") },
-            onSkip = { skipToEnd() },
-            onDone = {
-                // ここでナビゲーション遷移など
-            },
-            dotsContainerStyle = DotsContainerStyle(
-                containerColor = Color.Transparent,
-                contentPadding = PaddingValues(20.dp)
-            )
-        )
-    }
+        // You can also provide globalHeader / globalFooter for a persistent logo/CTA.
+    )
 }
