@@ -1,21 +1,44 @@
+
 name: Publish
 on:
   push:
     branches: ['release/**']
+
 jobs:
   publish:
     runs-on: macOS-latest
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-java@v4
         with:
           distribution: zulu
           java-version: 21
-      - name: Prepare signing props
+
+      - name: Export Gradle properties (decode base64 PGP)
+        shell: bash
         run: |
-          echo "ORG_GRADLE_PROJECT_signingInMemoryKeyB64=${{ secrets.GPG_KEY_CONTENTS_B64 }}" >> "$GITHUB_ENV"
-          echo "ORG_GRADLE_PROJECT_signingInMemoryKeyPassword=${{ secrets.SIGNING_PASSWORD }}" >> "$GITHUB_ENV"
+          set -euo pipefail
+
+          # Maven Central 認証
           echo "ORG_GRADLE_PROJECT_mavenCentralUsername=${{ secrets.MAVEN_CENTRAL_USERNAME }}" >> "$GITHUB_ENV"
           echo "ORG_GRADLE_PROJECT_mavenCentralPassword=${{ secrets.MAVEN_CENTRAL_PASSWORD }}" >> "$GITHUB_ENV"
+
+          # Sonatype ホスト（未設定なら S01 にフォールバック）
+          if [ -n "${{ secrets.MAVEN_CENTRAL_HOST }}" ]; then
+            echo "ORG_GRADLE_PROJECT_mavenCentralHost=${{ secrets.MAVEN_CENTRAL_HOST }}" >> "$GITHUB_ENV"
+          else
+            echo "ORG_GRADLE_PROJECT_mavenCentralHost=S01" >> "$GITHUB_ENV"
+          fi
+
+          # 署名鍵（Base64 → ASCII armor 文字列にデコードして multi-line env に投入）
+          echo 'ORG_GRADLE_PROJECT_signingInMemoryKey<<EOF' >> "$GITHUB_ENV"
+          echo "${{ secrets.GPG_KEY_CONTENTS_B64 }}" | base64 -d >> "$GITHUB_ENV"
+          echo 'EOF' >> "$GITHUB_ENV"
+
+          # 署名鍵パスフレーズ
+          echo "ORG_GRADLE_PROJECT_signingInMemoryKeyPassword=${{ secrets.SIGNING_PASSWORD }}" >> "$GITHUB_ENV"
+
       - name: Publish to Maven Central
-        run: ./gradlew :kmp-onboarding:publishToMavenCentral --no-configuration-cache
+        run: ./gradlew :kmp-onboarding:publishToMavenCentral --no-configuration-cache --stacktrace --info
