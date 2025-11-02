@@ -27,23 +27,18 @@ val keyPass: String? =
     providers.environmentVariable("SIGNING_PASSWORD").orNull
         ?: providers.gradleProperty("signingInMemoryKeyPassword").orNull
 
-val keyId: String? =
-    providers.environmentVariable("SIGNING_KEY_ID").orNull
-        ?: providers.gradleProperty("signingInMemoryKeyId").orNull
-
 // vanniktech が見る extra（保険）
 keyArmored?.let { extra["signingInMemoryKey"] = it }
 keyPass?.let { extra["signingInMemoryKeyPassword"] = it }
-keyId?.let { extra["signingInMemoryKeyId"] = it }
 
 // Sonatype 認証
 providers.environmentVariable("MAVEN_CENTRAL_USERNAME").orNull?.let { extra["mavenCentralUsername"] = it }
 providers.environmentVariable("MAVEN_CENTRAL_PASSWORD").orNull?.let { extra["mavenCentralPassword"] = it }
 
-// Gradle Signing に鍵を登録＋全 publication を署名
+// Gradle Signing に鍵を登録＋全 publication を署名（keyId は渡さない）
 signing {
     if (keyArmored != null && keyPass != null) {
-        useInMemoryPgpKeys(keyId, keyArmored, keyPass)
+        useInMemoryPgpKeys(keyArmored, keyPass) // ← 2引数版
         sign(publishing.publications)
     } else {
         logger.warn("Signing key not configured. Publications will not be signed.")
@@ -87,7 +82,7 @@ android {
 }
 
 mavenPublishing {
-    coordinates("io.github.yskuem", "kmp-onboarding", "1.0.1") // ← 1.0.0 には未署名が残っているためバージョンを上げる
+    coordinates("io.github.yskuem", "kmp-onboarding", "1.0.1") // 1.0.0 に未署名がある場合は上げる
     publishToMavenCentral()
     signAllPublications()
 
