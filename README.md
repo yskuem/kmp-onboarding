@@ -1,35 +1,89 @@
-This is a Kotlin Multiplatform project targeting Android, iOS.
+# KMP Onboarding
 
-* [/composeApp](./composeApp/src) is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-  - [commonMain](./composeApp/src/commonMain/kotlin) is for code that’s common for all targets.
-  - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-    For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-    the [iosMain](./composeApp/src/iosMain/kotlin) folder would be the right place for such calls.
-    Similarly, if you want to edit the Desktop (JVM) specific part, the [jvmMain](./composeApp/src/jvmMain/kotlin)
-    folder is the appropriate location.
+KMP Onboarding is a Kotlin Multiplatform library that helps you build rich, animated onboarding flows with Jetpack Compose Multiplatform. It provides ready-made UI primitives for paging, navigation controls, and page indicators so you can focus on your product story instead of wiring boilerplate.
 
-* [/iosApp](./iosApp/iosApp) contains iOS applications. Even if you’re sharing your UI with Compose Multiplatform,
-  you need this entry point for your iOS app. This is also where you should add SwiftUI code for your project.
+## Features
+- **Compose Multiplatform first** – Works across Android, iOS, desktop, and any other platform supported by Compose Multiplatform.
+- **Page modeling API** – Define onboarding pages with titles, bodies, images, and custom composable content using `PageViewModel`.
+- **Built-in controls** – Skip, Next, Back, and Done buttons with callbacks that plug into your navigation logic.
+- **Animated indicators** – Customizable page indicators with gradients, shapes, and transitions.
+- **Flexible theming** – Override colors, typography, gradients, and global headers/footers for complete brand alignment.
 
-### Build and Run Android Application
+## Getting started
+Add the dependency to the `commonMain` source set of your Compose Multiplatform project:
 
-To build and run the development version of the Android app, use the run configuration from the run widget
-in your IDE’s toolbar or build it directly from the terminal:
-- on macOS/Linux
-  ```shell
-  ./gradlew :composeApp:assembleDebug
-  ```
-- on Windows
-  ```shell
-  .\gradlew.bat :composeApp:assembleDebug
-  ```
+```kotlin
+kotlin {
+    sourceSets {
+        val commonMain by getting {
+            dependencies {
+                implementation("io.github.yskuem:kmp-onboarding:1.0.2")
+            }
+        }
+    }
+}
+```
 
-### Build and Run iOS Application
+## Usage example
+Below is a simple onboarding flow that demonstrates how to configure pages, customize controls, and react to user actions.
 
-To build and run the development version of the iOS app, use the run configuration from the run widget
-in your IDE’s toolbar or open the [/iosApp](./iosApp) directory in Xcode and run it from there.
+```kotlin
+@Composable
+fun OnboardingScreen() {
+    val pages = listOf(
+        PageViewModel(
+            title = "Welcome",
+            body = "Discover curated lessons tailored to your goals.",
+            image = {
+                Icon(
+                    imageVector = Icons.Outlined.School,
+                    contentDescription = null,
+                    modifier = Modifier.size(180.dp)
+                )
+            },
+            decoration = PageDecoration(
+                gradient = Brush.verticalGradient(
+                    listOf(Color(0xFFE8F5E9), Color(0xFFB2DFDB))
+                )
+            )
+        ),
+        PageViewModel(
+            title = "Track progress",
+            body = "Set reminders and stay motivated with daily streaks.",
+            decoration = PageDecoration(pageColor = Color(0xFFF3E5F5))
+        )
+    )
 
----
+    IntroductionScreen(
+        pages = pages,
+        showSkipButton = true,
+        showNextButton = true,
+        showBackButton = true,
+        showDoneButton = true,
+        skip = { Text("Skip") },
+        next = { Text("Next") },
+        back = { Text("Back") },
+        done = { Text("Get started") },
+        onSkip = { skipToEnd() },
+        onDone = {
+            // Navigate to your authenticated area here
+        },
+        dotsContainerStyle = DotsContainerStyle(
+            containerColor = Color.Transparent,
+            contentPadding = PaddingValues(20.dp)
+        )
+    )
+}
+```
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+### Advanced customization
+- Pass `rawPages` if you need full control over each page's composable content.
+- Supply your own `IntroState` via `rememberIntroState` to control paging programmatically.
+- Customize `DotsDecorator` to adjust indicator size, shape, colors, and spacing.
+- Use `globalHeader` and `globalFooter` slots to inject persistent content like logos or call-to-action buttons.
+
+## Sample application
+A working sample is included under [`composeApp`](./composeApp/src/commonMain/kotlin/lib/yskuem/kmp/onboarding/App.kt). You can run it on Android or iOS to see the onboarding experience in action.
+
+## License
+Please refer to the repository for licensing information and usage terms.
