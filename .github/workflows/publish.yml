@@ -1,28 +1,19 @@
-# .github/workflows/publish.yml
 name: Publish
-
 on:
   push:
-    branches:
-      - 'release/**'
+    branches: ['release/**']
 
 jobs:
   publish:
-    name: Release build and publish
     runs-on: macOS-latest
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-java@v4
         with:
           distribution: zulu
           java-version: 21
 
-      # Gradle が読む -P プロパティを $GITHUB_ENV に設定
-      # 秘密鍵は Base64 のまま渡し、build.gradle.kts 側でデコード
       - name: Prepare signing props
-        shell: bash
         run: |
           echo "ORG_GRADLE_PROJECT_signingInMemoryKeyB64=${{ secrets.GPG_KEY_CONTENTS_B64 }}" >> "$GITHUB_ENV"
           echo "ORG_GRADLE_PROJECT_signingInMemoryKeyPassword=${{ secrets.SIGNING_PASSWORD }}" >> "$GITHUB_ENV"
