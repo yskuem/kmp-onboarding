@@ -102,7 +102,6 @@ mavenPublishing {
 
     // 引数なしで Central Portal（新仕様）
     publishToMavenCentral()
-    signAllPublications()
 
     // KMP の javadoc 要件は空Jarで満たす（Dokkaタスク名依存を避ける）
     configure(
