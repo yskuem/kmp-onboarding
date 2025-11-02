@@ -1,14 +1,11 @@
-# .github/workflows/publish.yml
-name: Publish
 
+name: Publish
 on:
   push:
-    branches:
-      - 'release/**'
+    branches: ['release/**']
 
 jobs:
   publish:
-    name: Release build and publish
     runs-on: macOS-latest
 
     steps:
@@ -19,20 +16,29 @@ jobs:
           distribution: zulu
           java-version: 21
 
-      # base64 -> PRIVATE KEY に戻して in-memory で渡す
-      - name: Prepare signing props (base64 -> env)
+      - name: Export Gradle properties (decode base64 PGP)
         shell: bash
         run: |
-          echo "${{ secrets.GPG_KEY_CONTENTS_B64 }}" | base64 --decode > /tmp/private.asc
-          {
-            echo 'ORG_GRADLE_PROJECT_signingInMemoryKey<<EOF'
-            cat /tmp/private.asc
-            echo 'EOF'
-          } >> "$GITHUB_ENV"
-          echo "ORG_GRADLE_PROJECT_signingInMemoryKeyPassword=${{ secrets.SIGNING_PASSWORD }}" >> "$GITHUB_ENV"
-          echo "ORG_GRADLE_PROJECT_signingInMemoryKeyId=${{ secrets.SIGNING_KEY_ID }}" >> "$GITHUB_ENV"
+          set -euo pipefail
+
+          # Maven Central 認証
           echo "ORG_GRADLE_PROJECT_mavenCentralUsername=${{ secrets.MAVEN_CENTRAL_USERNAME }}" >> "$GITHUB_ENV"
           echo "ORG_GRADLE_PROJECT_mavenCentralPassword=${{ secrets.MAVEN_CENTRAL_PASSWORD }}" >> "$GITHUB_ENV"
 
+          # Sonatype ホスト（未設定なら S01 にフォールバック）
+          if [ -n "${{ secrets.MAVEN_CENTRAL_HOST }}" ]; then
+            echo "ORG_GRADLE_PROJECT_mavenCentralHost=${{ secrets.MAVEN_CENTRAL_HOST }}" >> "$GITHUB_ENV"
+          else
+            echo "ORG_GRADLE_PROJECT_mavenCentralHost=S01" >> "$GITHUB_ENV"
+          fi
+
+          # 署名鍵（Base64 → ASCII armor 文字列にデコードして multi-line env に投入）
+          echo 'ORG_GRADLE_PROJECT_signingInMemoryKey<<EOF' >> "$GITHUB_ENV"
+          echo "${{ secrets.GPG_KEY_CONTENTS_B64 }}" | base64 -d >> "$GITHUB_ENV"
+          echo 'EOF' >> "$GITHUB_ENV"
+
+          # 署名鍵パスフレーズ
+          echo "ORG_GRADLE_PROJECT_signingInMemoryKeyPassword=${{ secrets.SIGNING_PASSWORD }}" >> "$GITHUB_ENV"
+
       - name: Publish to Maven Central
-        run: ./gradlew :kmp-onboarding:publishToMavenCentral --no-configuration-cache
+        run: ./gradlew :kmp-onboarding:publishToMavenCentral --no-configuration-cache --stacktrace --info
