@@ -19,18 +19,13 @@ jobs:
           distribution: zulu
           java-version: 21
 
-      # base64 -> PRIVATE KEY に戻して in-memory で渡す
-      - name: Prepare signing props (base64 -> env)
+      # Gradle が読む -P プロパティを $GITHUB_ENV に設定
+      # 秘密鍵は Base64 のまま渡し、build.gradle.kts 側でデコード
+      - name: Prepare signing props
         shell: bash
         run: |
-          echo "${{ secrets.GPG_KEY_CONTENTS_B64 }}" | base64 --decode > /tmp/private.asc
-          {
-            echo 'ORG_GRADLE_PROJECT_signingInMemoryKey<<EOF'
-            cat /tmp/private.asc
-            echo 'EOF'
-          } >> "$GITHUB_ENV"
+          echo "ORG_GRADLE_PROJECT_signingInMemoryKeyB64=${{ secrets.GPG_KEY_CONTENTS_B64 }}" >> "$GITHUB_ENV"
           echo "ORG_GRADLE_PROJECT_signingInMemoryKeyPassword=${{ secrets.SIGNING_PASSWORD }}" >> "$GITHUB_ENV"
-          echo "ORG_GRADLE_PROJECT_signingInMemoryKeyId=${{ secrets.SIGNING_KEY_ID }}" >> "$GITHUB_ENV"
           echo "ORG_GRADLE_PROJECT_mavenCentralUsername=${{ secrets.MAVEN_CENTRAL_USERNAME }}" >> "$GITHUB_ENV"
           echo "ORG_GRADLE_PROJECT_mavenCentralPassword=${{ secrets.MAVEN_CENTRAL_PASSWORD }}" >> "$GITHUB_ENV"
 
