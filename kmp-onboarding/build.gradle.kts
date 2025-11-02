@@ -3,7 +3,7 @@ import com.vanniktech.maven.publish.KotlinMultiplatform
 import java.util.Base64
 
 plugins {
-    id("com.android.library")          // android { } を使うため必須
+    id("com.android.library") // ← これが無いと android{ } が解決しない
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
@@ -12,40 +12,45 @@ plugins {
     signing
 }
 
-// -------------------- Signing: Base64鍵のみを使用 --------------------
+// ---- Signing（B64鍵のみ）----
 val signingKeyId = providers.environmentVariable("SIGNING_KEY_ID").orNull
 val signingKeyPassword = providers.environmentVariable("SIGNING_PASSWORD").orNull
 val signingKeyBase64 = providers.environmentVariable("GPG_KEY_CONTENTS_B64").orNull
-val asciiArmoredKey: String? = signingKeyBase64?.let { runCatching {
-    String(Base64.getDecoder().decode(it))
-}.getOrNull() }
+val resolvedSigningKey = signingKeyBase64?.let { encoded ->
+    runCatching { String(Base64.getDecoder().decode(encoded)) }.getOrNull()
+}
 
-// vanniktech のドキュメントが想定するプロパティ名（保険として設定）
-asciiArmoredKey?.let { extra["signingInMemoryKey"] = it }
-signingKeyId?.let { extra["signingInMemoryKeyId"] = it }
+// vanniktech が参照する extra property（保険）
+resolvedSigningKey?.let { extra["signingInMemoryKey"] = it }
 signingKeyPassword?.let { extra["signingInMemoryKeyPassword"] = it }
+signingKeyId?.let { extra["signingInMemoryKeyId"] = it }
 
-// Sonatype 認証（ユーザートークン）
-providers.environmentVariable("MAVEN_CENTRAL_USERNAME").orNull?.let { extra["mavenCentralUsername"] = it }
-providers.environmentVariable("MAVEN_CENTRAL_PASSWORD").orNull?.let { extra["mavenCentralPassword"] = it }
+// Central 認証
+providers.environmentVariable("MAVEN_CENTRAL_USERNAME").orNull?.let {
+    extra["mavenCentralUsername"] = it
+}
+providers.environmentVariable("MAVEN_CENTRAL_PASSWORD").orNull?.let {
+    extra["mavenCentralPassword"] = it
+}
 
-// Gradle Signing プラグインに確実に鍵を登録
+// すべての publication を署名
 signing {
-    if (asciiArmoredKey != null && signingKeyPassword != null) {
-        useInMemoryPgpKeys(signingKeyId, asciiArmoredKey, signingKeyPassword)
+    if (resolvedSigningKey != null && signingKeyPassword != null) {
+        useInMemoryPgpKeys(signingKeyId, resolvedSigningKey, signingKeyPassword)
+        sign(publishing.publications)
     } else {
         logger.warn("Signing key not configured. Publications will not be signed.")
     }
 }
 
 kotlin {
-    // Android ターゲット
+    // ← ここは androidLibrary ではなく androidTarget
     androidTarget {
-        // ライブラリとして公開するビルド変種
+        // ライブラリとして公開する変種
         publishLibraryVariants("release")
     }
 
-    // iOS ターゲット
+    val xcfName = "kmp-onboardingKit"
     iosX64()
     iosArm64()
     iosSimulatorArm64()
@@ -64,19 +69,27 @@ kotlin {
             }
         }
         val commonTest by getting { dependencies { implementation(libs.kotlin.test) } }
+
         val androidMain by getting
+
+        // iOS 共通ソースセット（任意）
         val iosMain by creating
-        val iosX64Main by getting; val iosArm64Main by getting; val iosSimulatorArm64Main by getting
-        iosX64Main.dependsOn(iosMain); iosArm64Main.dependsOn(iosMain); iosSimulatorArm64Main.dependsOn(iosMain)
+        val iosX64Main by getting
+        val iosArm64Main by getting
+        val iosSimulatorArm64Main by getting
+        iosX64Main.dependsOn(iosMain)
+        iosArm64Main.dependsOn(iosMain)
+        iosSimulatorArm64Main.dependsOn(iosMain)
     }
 }
 
-// Android 側設定（AAR の sources.jar を必ず生成）
+// Android 設定はトップレベルの android{ } に置く
 android {
     namespace = "io.github.yskuem.onboarding"
     compileSdk = 36
     defaultConfig { minSdk = 24 }
 
+    // AAR の sources.jar を必ず生成
     publishing {
         singleVariant("release") {
             withSourcesJar()
@@ -84,16 +97,13 @@ android {
     }
 }
 
-// -------------------- Maven Central 公開設定 --------------------
 mavenPublishing {
-    // グループID: io.github.yskuem, アーティファクト: kmp-onboarding, バージョン: 1.0.0
     coordinates("io.github.yskuem", "kmp-onboarding", "1.0.0")
 
-    // Central Portal をターゲットにし、全 publication を署名
+    // 引数なしで Central Portal（新仕様）
     publishToMavenCentral()
-    signAllPublications()  // ← これが無いと .asc が生成されません（公式手順）
 
-    // KMP では空JavadocJarで要件を満たすのが安定
+    // KMP の javadoc 要件は空Jarで満たす（Dokkaタスク名依存を避ける）
     configure(
         KotlinMultiplatform(
             javadocJar = JavadocJar.Empty(),
