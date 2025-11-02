@@ -20,24 +20,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-
-          # Maven Central 認証
           echo "ORG_GRADLE_PROJECT_mavenCentralUsername=${{ secrets.MAVEN_CENTRAL_USERNAME }}" >> "$GITHUB_ENV"
           echo "ORG_GRADLE_PROJECT_mavenCentralPassword=${{ secrets.MAVEN_CENTRAL_PASSWORD }}" >> "$GITHUB_ENV"
 
-          # Sonatype ホスト（未設定なら S01 にフォールバック）
           if [ -n "${{ secrets.MAVEN_CENTRAL_HOST }}" ]; then
             echo "ORG_GRADLE_PROJECT_mavenCentralHost=${{ secrets.MAVEN_CENTRAL_HOST }}" >> "$GITHUB_ENV"
           else
             echo "ORG_GRADLE_PROJECT_mavenCentralHost=S01" >> "$GITHUB_ENV"
           fi
 
-          # 署名鍵（Base64 → ASCII armor 文字列にデコードして multi-line env に投入）
           echo 'ORG_GRADLE_PROJECT_signingInMemoryKey<<EOF' >> "$GITHUB_ENV"
           echo "${{ secrets.GPG_KEY_CONTENTS_B64 }}" | base64 -d >> "$GITHUB_ENV"
           echo 'EOF' >> "$GITHUB_ENV"
 
-          # 署名鍵パスフレーズ
           echo "ORG_GRADLE_PROJECT_signingInMemoryKeyPassword=${{ secrets.SIGNING_PASSWORD }}" >> "$GITHUB_ENV"
 
       - name: Publish to Maven Central
