@@ -3,7 +3,7 @@ import com.vanniktech.maven.publish.KotlinMultiplatform
 import java.util.Base64
 
 plugins {
-    id("com.android.library") // ← これが無いと android{ } が解決しない
+    id("com.android.library")
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
@@ -12,31 +12,38 @@ plugins {
     signing
 }
 
-// ---- Signing（B64鍵のみ）----
-val signingKeyId = providers.environmentVariable("SIGNING_KEY_ID").orNull
-val signingKeyPassword = providers.environmentVariable("SIGNING_PASSWORD").orNull
-val signingKeyBase64 = providers.environmentVariable("GPG_KEY_CONTENTS_B64").orNull
-val resolvedSigningKey = signingKeyBase64?.let { encoded ->
-    runCatching { String(Base64.getDecoder().decode(encoded)) }.getOrNull()
+// ---------- Signing inputs (env または -P の両対応) ----------
+val keyB64: String? =
+    providers.environmentVariable("GPG_KEY_CONTENTS_B64").orNull
+        ?: providers.gradleProperty("signingInMemoryKeyB64").orNull
+
+// keyArmored は ASCII-armored PRIVATE KEY 本体
+val keyArmored: String? = when {
+    keyB64 != null -> runCatching { String(Base64.getDecoder().decode(keyB64)) }.getOrNull()
+    else -> providers.gradleProperty("signingInMemoryKey").orNull
 }
 
-// vanniktech が参照する extra property（保険）
-resolvedSigningKey?.let { extra["signingInMemoryKey"] = it }
-signingKeyPassword?.let { extra["signingInMemoryKeyPassword"] = it }
-signingKeyId?.let { extra["signingInMemoryKeyId"] = it }
+val keyPass: String? =
+    providers.environmentVariable("SIGNING_PASSWORD").orNull
+        ?: providers.gradleProperty("signingInMemoryKeyPassword").orNull
 
-// Central 認証
-providers.environmentVariable("MAVEN_CENTRAL_USERNAME").orNull?.let {
-    extra["mavenCentralUsername"] = it
-}
-providers.environmentVariable("MAVEN_CENTRAL_PASSWORD").orNull?.let {
-    extra["mavenCentralPassword"] = it
-}
+val keyId: String? =
+    providers.environmentVariable("SIGNING_KEY_ID").orNull
+        ?: providers.gradleProperty("signingInMemoryKeyId").orNull
 
-// すべての publication を署名
+// vanniktech が見る extra（保険）
+keyArmored?.let { extra["signingInMemoryKey"] = it }
+keyPass?.let { extra["signingInMemoryKeyPassword"] = it }
+keyId?.let { extra["signingInMemoryKeyId"] = it }
+
+// Sonatype 認証
+providers.environmentVariable("MAVEN_CENTRAL_USERNAME").orNull?.let { extra["mavenCentralUsername"] = it }
+providers.environmentVariable("MAVEN_CENTRAL_PASSWORD").orNull?.let { extra["mavenCentralPassword"] = it }
+
+// Gradle Signing に鍵を登録＋全 publication を署名
 signing {
-    if (resolvedSigningKey != null && signingKeyPassword != null) {
-        useInMemoryPgpKeys(signingKeyId, resolvedSigningKey, signingKeyPassword)
+    if (keyArmored != null && keyPass != null) {
+        useInMemoryPgpKeys(keyId, keyArmored, keyPass)
         sign(publishing.publications)
     } else {
         logger.warn("Signing key not configured. Publications will not be signed.")
@@ -44,13 +51,9 @@ signing {
 }
 
 kotlin {
-    // ← ここは androidLibrary ではなく androidTarget
     androidTarget {
-        // ライブラリとして公開する変種
         publishLibraryVariants("release")
     }
-
-    val xcfName = "kmp-onboardingKit"
     iosX64()
     iosArm64()
     iosSimulatorArm64()
@@ -69,41 +72,25 @@ kotlin {
             }
         }
         val commonTest by getting { dependencies { implementation(libs.kotlin.test) } }
-
+        // Default Hierarchy を使うため iosMain は明示作成しない
         val androidMain by getting
-
-        // iOS 共通ソースセット（任意）
-        val iosMain by creating
-        val iosX64Main by getting
-        val iosArm64Main by getting
-        val iosSimulatorArm64Main by getting
-        iosX64Main.dependsOn(iosMain)
-        iosArm64Main.dependsOn(iosMain)
-        iosSimulatorArm64Main.dependsOn(iosMain)
     }
 }
 
-// Android 設定はトップレベルの android{ } に置く
 android {
     namespace = "io.github.yskuem.onboarding"
     compileSdk = 36
     defaultConfig { minSdk = 24 }
-
-    // AAR の sources.jar を必ず生成
     publishing {
-        singleVariant("release") {
-            withSourcesJar()
-        }
+        singleVariant("release") { withSourcesJar() }
     }
 }
 
 mavenPublishing {
-    coordinates("io.github.yskuem", "kmp-onboarding", "1.0.0")
-
-    // 引数なしで Central Portal（新仕様）
+    coordinates("io.github.yskuem", "kmp-onboarding", "1.0.1") // ← 1.0.0 には未署名が残っているためバージョンを上げる
     publishToMavenCentral()
+    signAllPublications()
 
-    // KMP の javadoc 要件は空Jarで満たす（Dokkaタスク名依存を避ける）
     configure(
         KotlinMultiplatform(
             javadocJar = JavadocJar.Empty(),
@@ -125,11 +112,7 @@ mavenPublishing {
             }
         }
         developers {
-            developer {
-                id = "yskuem"
-                name = "yskuem"
-                url = "https://github.com/yskuem"
-            }
+            developer { id = "yskuem"; name = "yskuem"; url = "https://github.com/yskuem" }
         }
         scm {
             url = "https://github.com/yskuem/kmp-onboarding"
