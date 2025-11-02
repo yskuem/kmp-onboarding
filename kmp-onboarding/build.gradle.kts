@@ -1,60 +1,54 @@
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinMultiplatform
-import java.util.Base64
 
 plugins {
-    id("com.android.library")
     alias(libs.plugins.kotlinMultiplatform)
+    alias(libs.plugins.androidKotlinMultiplatformLibrary)
+    alias(libs.plugins.androidLint)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.dokka)
     alias(libs.plugins.mavenPublish)
-    signing
-}
-
-// ---------- Signing inputs (env または -P の両対応) ----------
-val keyB64: String? =
-    providers.environmentVariable("GPG_KEY_CONTENTS_B64").orNull
-        ?: providers.gradleProperty("signingInMemoryKeyB64").orNull
-
-// keyArmored は ASCII-armored PRIVATE KEY 本体
-val keyArmored: String? = when {
-    keyB64 != null -> runCatching { String(Base64.getDecoder().decode(keyB64)) }.getOrNull()
-    else -> providers.gradleProperty("signingInMemoryKey").orNull
-}
-
-val keyPass: String? =
-    providers.environmentVariable("SIGNING_PASSWORD").orNull
-        ?: providers.gradleProperty("signingInMemoryKeyPassword").orNull
-
-// vanniktech が見る extra（保険）
-keyArmored?.let { extra["signingInMemoryKey"] = it }
-keyPass?.let { extra["signingInMemoryKeyPassword"] = it }
-
-// Sonatype 認証
-providers.environmentVariable("MAVEN_CENTRAL_USERNAME").orNull?.let { extra["mavenCentralUsername"] = it }
-providers.environmentVariable("MAVEN_CENTRAL_PASSWORD").orNull?.let { extra["mavenCentralPassword"] = it }
-
-// Gradle Signing に鍵を登録＋全 publication を署名（keyId は渡さない）
-signing {
-    if (keyArmored != null && keyPass != null) {
-        useInMemoryPgpKeys(keyArmored, keyPass) // ← 2引数版
-        sign(publishing.publications)
-    } else {
-        logger.warn("Signing key not configured. Publications will not be signed.")
-    }
 }
 
 kotlin {
-    androidTarget {
-        publishLibraryVariants("release")
+    androidLibrary {
+        namespace = "io.github.yskuem.onboarding"
+        compileSdk = 36
+        minSdk = 24
+
+        withHostTestBuilder {
+        }
+
+        withDeviceTestBuilder {
+            sourceSetTreeName = "test"
+        }.configure {
+            instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        }
     }
-    iosX64()
-    iosArm64()
-    iosSimulatorArm64()
+
+    val xcfName = "kmp-onboardingKit"
+
+    iosX64 {
+        binaries.framework {
+            baseName = xcfName
+        }
+    }
+
+    iosArm64 {
+        binaries.framework {
+            baseName = xcfName
+        }
+    }
+
+    iosSimulatorArm64 {
+        binaries.framework {
+            baseName = xcfName
+        }
+    }
 
     sourceSets {
-        val commonMain by getting {
+        commonMain {
             dependencies {
                 implementation(libs.kotlin.stdlib)
                 implementation(compose.runtime)
@@ -66,29 +60,44 @@ kotlin {
                 implementation(compose.components.uiToolingPreview)
             }
         }
-        val commonTest by getting { dependencies { implementation(libs.kotlin.test) } }
-        // Default Hierarchy を使うため iosMain は明示作成しない
-        val androidMain by getting
-    }
-}
 
-android {
-    namespace = "io.github.yskuem.onboarding"
-    compileSdk = 36
-    defaultConfig { minSdk = 24 }
-    publishing {
-        singleVariant("release") { withSourcesJar() }
+        commonTest {
+            dependencies {
+                implementation(libs.kotlin.test)
+            }
+        }
+
+        androidMain {
+            dependencies {
+                // Android-specific dependencies
+            }
+        }
+
+        getByName("androidDeviceTest") {
+            dependencies {
+                implementation(libs.androidx.runner)
+                implementation(libs.androidx.core)
+                implementation(libs.androidx.testExt.junit)
+            }
+        }
+
+        iosMain {
+            dependencies {
+                // iOS-specific dependencies
+            }
+        }
     }
 }
 
 mavenPublishing {
-    coordinates("io.github.yskuem", "kmp-onboarding", "1.0.1") // 1.0.0 に未署名がある場合は上げる
+    coordinates("io.github.yskuem", "kmp-onboarding", "1.0.2")
+
     publishToMavenCentral()
-    signAllPublications()
+    //signAllPublications()
 
     configure(
         KotlinMultiplatform(
-            javadocJar = JavadocJar.Empty(),
+            javadocJar = JavadocJar.Dokka("dokkaGeneratePublicationHtml"),
             sourcesJar = true,
             androidVariantsToPublish = listOf("release")
         )
@@ -107,7 +116,11 @@ mavenPublishing {
             }
         }
         developers {
-            developer { id = "yskuem"; name = "yskuem"; url = "https://github.com/yskuem" }
+            developer {
+                id = "yskuem"
+                name = "yskuem"
+                url = "https://github.com/yskuem"
+            }
         }
         scm {
             url = "https://github.com/yskuem/kmp-onboarding"
