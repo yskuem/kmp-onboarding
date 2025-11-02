@@ -3,7 +3,7 @@
 KMP Onboarding is a Kotlin Multiplatform library that helps you build rich, animated onboarding flows with Jetpack Compose Multiplatform. It provides ready-made UI primitives for paging, navigation controls, and page indicators so you can focus on your product story instead of wiring boilerplate.
 
 ## Features
-- **Compose Multiplatform first** – Works across Android, iOS, desktop, and any other platform supported by Compose Multiplatform.
+- **Compose Multiplatform first** – Works across Android, iOS.
 - **Page modeling API** – Define onboarding pages with titles, bodies, images, and custom composable content using `PageViewModel`.
 - **Built-in controls** – Skip, Next, Back, and Done buttons with callbacks that plug into your navigation logic.
 - **Animated indicators** – Customizable page indicators with gradients, shapes, and transitions.
