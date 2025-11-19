@@ -2,6 +2,7 @@ package lib.yskuem.kmp.onboarding
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Quiz
@@ -15,6 +16,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import io.github.yskuem.onboarding.api.DotsContainerStyle
+import io.github.yskuem.onboarding.api.IntroButtonStyle
 import io.github.yskuem.onboarding.api.IntroductionScreen
 import io.github.yskuem.onboarding.api.PageDecoration
 import io.github.yskuem.onboarding.api.PageViewModel
@@ -101,8 +103,18 @@ fun OnboardingScreen(onFinished: () -> Unit) {
         dotsContainerStyle = DotsContainerStyle(
             containerColor = Color.Transparent,
             contentPadding = PaddingValues(20.dp)
-        )
+        ),
 
-        // You can also provide globalHeader / globalFooter for a persistent logo/CTA.
+        // Button styling
+        nextButtonStyle = IntroButtonStyle(
+            containerColor = Color(0xFF6666FF),
+            contentColor = Color.White,
+            shape = RoundedCornerShape(8.dp)
+        ),
+        doneButtonStyle = IntroButtonStyle(
+            containerColor = Color(0xFF6666FF),
+            contentColor = Color.White,
+            shape = RoundedCornerShape(8.dp)
+        )
     )
 }

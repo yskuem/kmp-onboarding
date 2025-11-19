@@ -48,7 +48,6 @@ fun IntroductionScreen(
     onChange: ((Int) -> Unit)? = null,
 
     dotsDecorator: DotsDecorator = DotsDecorator(),
-    dotsDecorator: DotsDecorator = DotsDecorator(),
     dotsContainerStyle: DotsContainerStyle = DotsContainerStyle(),
 
     nextButtonStyle: IntroButtonStyle = IntroButtonStyle(),
@@ -175,7 +174,6 @@ fun IntroductionScreen(
                     onSkip = onSkip,
                     onDone = onDone,
                     decorator = dotsDecorator,
-                    containerStyle = dotsContainerStyle,
                     containerStyle = dotsContainerStyle,
                     nextButtonStyle = nextButtonStyle,
                     doneButtonStyle = doneButtonStyle,

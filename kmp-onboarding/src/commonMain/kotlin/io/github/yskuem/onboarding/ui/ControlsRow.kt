@@ -3,7 +3,6 @@ package io.github.yskuem.onboarding.ui
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.PagerState
-import androidx.compose.foundation.pager.PagerState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
@@ -19,8 +18,10 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
 import io.github.yskuem.onboarding.api.DotsContainerStyle
 import io.github.yskuem.onboarding.api.DotsDecorator
+import io.github.yskuem.onboarding.api.IntroButtonStyle
 import io.github.yskuem.onboarding.state.IntroState
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -38,8 +39,6 @@ internal fun ControlsRow(
     done: (@Composable () -> Unit)?,
     onSkip: (suspend IntroState.() -> Unit)?,
     onDone: (suspend IntroState.() -> Unit)?,
-    decorator: DotsDecorator,
-    containerStyle: DotsContainerStyle,
     decorator: DotsDecorator,
     containerStyle: DotsContainerStyle,
     nextButtonStyle: IntroButtonStyle,
