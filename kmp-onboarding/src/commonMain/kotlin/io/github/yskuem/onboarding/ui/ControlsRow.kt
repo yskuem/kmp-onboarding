@@ -97,8 +97,8 @@ internal fun ControlsRow(
                                 if (onDone != null) state.onDone()
                             }
                         },
-                        contentPadding = PaddingValues(horizontal = 18.dp, vertical = 10.dp),
-                        shape = RoundedCornerShape(16.dp),
+                        contentPadding = doneButtonStyle.contentPadding ?: PaddingValues(horizontal = 18.dp, vertical = 10.dp),
+                        shape = doneButtonStyle.shape ?: RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if (doneButtonStyle.containerColor != Color.Unspecified) 
                                 doneButtonStyle.containerColor else ButtonDefaults.buttonColors().containerColor,
@@ -110,8 +110,8 @@ internal fun ControlsRow(
                 !isLast && showNextButton && next != null -> {
                     FilledTonalButton(
                         onClick = { scope.launch { state.next() } },
-                        contentPadding = PaddingValues(horizontal = 18.dp, vertical = 10.dp),
-                        shape = RoundedCornerShape(16.dp),
+                        contentPadding = nextButtonStyle.contentPadding ?: PaddingValues(horizontal = 18.dp, vertical = 10.dp),
+                        shape = nextButtonStyle.shape ?: RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.filledTonalButtonColors(
                             containerColor = if (nextButtonStyle.containerColor != Color.Unspecified) 
                                 nextButtonStyle.containerColor else ButtonDefaults.filledTonalButtonColors().containerColor,
