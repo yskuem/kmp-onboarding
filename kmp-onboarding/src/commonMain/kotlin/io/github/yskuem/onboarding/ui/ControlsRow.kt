@@ -3,7 +3,9 @@ package io.github.yskuem.onboarding.ui
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.TextButton
@@ -38,6 +40,10 @@ internal fun ControlsRow(
     onDone: (suspend IntroState.() -> Unit)?,
     decorator: DotsDecorator,
     containerStyle: DotsContainerStyle,
+    decorator: DotsDecorator,
+    containerStyle: DotsContainerStyle,
+    nextButtonStyle: IntroButtonStyle,
+    doneButtonStyle: IntroButtonStyle,
     state: IntroState,
 ) {
     val isLast = pagerState.currentPage == pageCount - 1
@@ -92,14 +98,26 @@ internal fun ControlsRow(
                             }
                         },
                         contentPadding = PaddingValues(horizontal = 18.dp, vertical = 10.dp),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (doneButtonStyle.containerColor != Color.Unspecified) 
+                                doneButtonStyle.containerColor else ButtonDefaults.buttonColors().containerColor,
+                            contentColor = if (doneButtonStyle.contentColor != Color.Unspecified) 
+                                doneButtonStyle.contentColor else ButtonDefaults.buttonColors().contentColor
+                        )
                     ) { done() }
                 }
                 !isLast && showNextButton && next != null -> {
                     FilledTonalButton(
                         onClick = { scope.launch { state.next() } },
                         contentPadding = PaddingValues(horizontal = 18.dp, vertical = 10.dp),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = if (nextButtonStyle.containerColor != Color.Unspecified) 
+                                nextButtonStyle.containerColor else ButtonDefaults.filledTonalButtonColors().containerColor,
+                            contentColor = if (nextButtonStyle.contentColor != Color.Unspecified) 
+                                nextButtonStyle.contentColor else ButtonDefaults.filledTonalButtonColors().contentColor
+                        )
                     ) { next() }
                 }
                 else -> Spacer(Modifier.width(64.dp))
