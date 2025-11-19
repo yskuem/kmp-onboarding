@@ -40,7 +40,7 @@ kotlin {
             implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
-            implementation("io.github.yskuem:kmp-onboarding:1.0.2")
+            implementation(project(":kmp-onboarding"))
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

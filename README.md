@@ -104,7 +104,20 @@ fun OnboardingScreen(onFinished: () -> Unit) {
         // Indicator container styling
         dotsContainerStyle = DotsContainerStyle(
             containerColor = Color.Transparent,
+            containerColor = Color.Transparent,
             contentPadding = PaddingValues(20.dp)
+        ),
+
+        // Button styling
+        nextButtonStyle = IntroButtonStyle(
+            containerColor = Color(0xFF6666FF),
+            contentColor = Color.White,
+            shape = RoundedCornerShape(8.dp)
+        ),
+        doneButtonStyle = IntroButtonStyle(
+            containerColor = Color(0xFF6666FF),
+            contentColor = Color.White,
+            shape = RoundedCornerShape(8.dp)
         )
 
         // You can also provide globalHeader / globalFooter for a persistent logo/CTA.
@@ -116,6 +129,7 @@ fun OnboardingScreen(onFinished: () -> Unit) {
 - Pass `rawPages` if you need full control over each page's composable content.
 - Supply your own `IntroState` via `rememberIntroState` to control paging programmatically.
 - Customize `DotsDecorator` to adjust indicator size, shape, colors, and spacing.
+- Configure `IntroButtonStyle` to change button colors, shapes, and padding.
 - Use `globalHeader` and `globalFooter` slots to inject persistent content like logos or call-to-action buttons.
 
 ## Sample application
