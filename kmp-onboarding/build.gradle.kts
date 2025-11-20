@@ -90,7 +90,7 @@ kotlin {
 }
 
 mavenPublishing {
-    coordinates("io.github.yskuem", "kmp-onboarding", "1.0.2")
+    coordinates("io.github.yskuem", "kmp-onboarding", "1.0.3")
 
     publishToMavenCentral()
     signAllPublications()

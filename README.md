@@ -21,7 +21,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation("io.github.yskuem:kmp-onboarding:1.0.2")
+                implementation("io.github.yskuem:kmp-onboarding:1.0.3")
             }
         }
     }
