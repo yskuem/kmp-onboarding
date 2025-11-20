@@ -62,3 +62,10 @@ data class DotsContainerStyle(
     val shape: Shape = RoundedCornerShape(0.dp),
     val shadowElevation: Dp = 0.dp,
 )
+
+data class IntroButtonStyle(
+    val containerColor: Color = Color.Unspecified,
+    val contentColor: Color = Color.Unspecified,
+    val shape: Shape? = null,
+    val contentPadding: PaddingValues? = null,
+)

@@ -50,6 +50,9 @@ fun IntroductionScreen(
     dotsDecorator: DotsDecorator = DotsDecorator(),
     dotsContainerStyle: DotsContainerStyle = DotsContainerStyle(),
 
+    nextButtonStyle: IntroButtonStyle = IntroButtonStyle(),
+    doneButtonStyle: IntroButtonStyle = IntroButtonStyle(),
+
     globalHeader: (@Composable () -> Unit)? = null,
     globalFooter: (@Composable () -> Unit)? = null,
     globalBackgroundColor: Color = Color.Unspecified,
@@ -172,6 +175,8 @@ fun IntroductionScreen(
                     onDone = onDone,
                     decorator = dotsDecorator,
                     containerStyle = dotsContainerStyle,
+                    nextButtonStyle = nextButtonStyle,
+                    doneButtonStyle = doneButtonStyle,
                     state = state,
                 )
 
