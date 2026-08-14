@@ -1,3 +1,5 @@
+
+
 # KMP Onboarding
 
 KMP Onboarding is a Kotlin Multiplatform library that helps you build rich, animated onboarding flows with Jetpack Compose Multiplatform. It provides ready-made UI primitives for paging, navigation controls, and page indicators so you can focus on your product story instead of wiring boilerplate.
@@ -103,7 +105,6 @@ fun OnboardingScreen(onFinished: () -> Unit) {
 
         // Indicator container styling
         dotsContainerStyle = DotsContainerStyle(
-            containerColor = Color.Transparent,
             containerColor = Color.Transparent,
             contentPadding = PaddingValues(20.dp)
         ),
